@@ -1,0 +1,6 @@
+@Elektrijaam_ORM_11_HostAddress = http://localhost:5121
+
+GET {{Elektrijaam_ORM_11_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
