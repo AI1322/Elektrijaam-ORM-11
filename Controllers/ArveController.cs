@@ -8,7 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace Elektrijaam_ORM_11.Controllers
 {
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     [ApiController]
     public class ArveController : ControllerBase
     {
@@ -19,149 +19,104 @@ namespace Elektrijaam_ORM_11.Controllers
             _context = context;
         }
 
-        [HttpGet("tarbija/{id}/arved")]
-        public IActionResult GetTarbijaArved(int id)
-        {
-            try
-            {
-                var tarbija = _context.Tarbijad
-                    .Include(t => t.Arved)
-                    .FirstOrDefault(t => t.Id == id);
-
-                if (tarbija == null)
-                    return BadRequest("Tarbija ei leitud");
-
-                return Ok(tarbija.Arved);
-            }
-            catch (Exception)
-            {
-                return BadRequest("Tarbija ei leitud");
-            }
-        }
-
-        [HttpGet("tarbija/{id}/arved/summa")]
-        public IActionResult GetTarbijaArveteSumma(int id)
-        {
-            try
-            {
-                var tarbija = _context.Tarbijad
-                    .Include(t => t.Arved)
-                    .FirstOrDefault(t => t.Id == id);
-
-                if (tarbija == null)
-                    return BadRequest("Tarbija ei leitud");
-
-                decimal summa = 0;
-                foreach (var arve in tarbija.Arved)
-                {
-                    summa += arve.Summa;
-                }
-
-                return Ok(new { TarbijaId = id, KokkuSumma = summa });
-            }
-            catch (Exception)
-            {
-                return BadRequest("Tarbija ei leitud");
-            }
-        }
-
 
         [HttpGet("maksmata")]
-        public IActionResult GetMaksmataArved()
+        public async Task<ActionResult<IEnumerable<Arve>>> GetMaksmataArved()
         {
-            var arved = _context.Arved.ToList();
-            List<Arve> maksmataArved = new List<Arve>();
-            foreach (Arve arve in arved)
-            {
-                if (!arve.Maksestaatus.Makstud)
-                {
-                    maksmataArved.Add(arve);
-                }
-            }
-            if (maksmataArved != null)
-            {
-                return Ok(arved);
-            }
-            else
-            {
-                return Ok("Kõik arved on makstud");
-            }
+            return await _context.Arved
+                .Where(a => !a.Maksestaatus.Makstud)
+                .ToListAsync();
         }
 
-        [HttpGet("maksmata/uletatud")]
-        public IActionResult GetUletatudArved()
+        [HttpGet("tarbija/{tarbijaId}/maksmata")]
+        public async Task<ActionResult<IEnumerable<Arve>>> GetMaksmataArvedTarbija(int tarbijaId)
         {
-            List<Arve> uletatudArved = new List<Arve>();
-            foreach (Arve arve in _context.Arved.ToList())
-            {
-                if (arve.Maksestaatus.MaksmiseTahtaeg < DateTime.Today && !arve.Maksestaatus.Makstud)
-                {
-                    uletatudArved.Add(arve);
-                }
-            }
-            if (uletatudArved.IsNullOrEmpty())
-            {
-                return Ok("Kõik arved on makstud");
-            }
-            else
-            {
-                return Ok(uletatudArved);
-            }
+            return await _context.Arved
+                .Where(a => a.TarbijaId == tarbijaId && !a.Maksestaatus.Makstud)
+                .ToListAsync();
         }
 
-        [HttpGet("tarbija/{id}/maksmata")]
-        public IActionResult GetTarbijaMaksmataArved(int id)
+
+        // GET: api/Arve
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<Arve>>> GetArves()
         {
+            return await _context.Arved.ToListAsync();
+        }
+
+        // GET: api/Arve/5
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Arve>> GetArve(int id)
+        {
+            var arve = await _context.Arved.FindAsync(id);
+
+            if (arve == null)
+            {
+                return NotFound();
+            }
+
+            return arve;
+        }
+
+        // PUT: api/Arve/5
+        [HttpPut("{id}")]
+        public async Task<IActionResult> PutArve(int id, Arve arve)
+        {
+            if (id != arve.Id)
+            {
+                return BadRequest();
+            }
+
+            _context.Entry(arve).State = EntityState.Modified;
+
             try
             {
-                Tarbija tarbija = _context.Tarbijad.Find(id);
-                List<Arve> maksmataArved = new List<Arve>();
-                foreach (Arve arve in tarbija.Arved.ToList())
-                {
-                    if (!arve.Maksestaatus.Makstud)
-                    {
-                        maksmataArved.Add(arve);
-                    }
-                }
-                if (maksmataArved.IsNullOrEmpty())
-                {
-                    return Ok("Kõik arved on makstud");
-                }
-                return Ok(maksmataArved);
+                await _context.SaveChangesAsync();
             }
-            catch (Exception ex)
+            catch (DbUpdateConcurrencyException)
             {
-                return BadRequest("Tarbija ei leidnud");
+                if (!ArveExists(id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
             }
+
+            return NoContent();
         }
 
-        [HttpGet("tarbija/{id}/maksmata/uletatud")]
-        public IActionResult GetTarbijaUletatudArved(int id)
+        // POST: api/Arve
+        [HttpPost]
+        public async Task<ActionResult<Arve>> PostArve(Arve arve)
         {
-            try
-            {
-                Tarbija tarbija = _context.Tarbijad.Find(id);
-                List<Arve> uletatudArved = new List<Arve>();
+            _context.Arved.Add(arve);
+            await _context.SaveChangesAsync();
 
-                foreach (Arve arve in tarbija.Arved.ToList())
-                {
-                    if (arve.Maksestaatus.MaksmiseTahtaeg < DateTime.Today && !arve.Maksestaatus.Makstud)
-                    {
-                        uletatudArved.Add(arve);
-                    }
-                }
-                if (uletatudArved.IsNullOrEmpty())
-                {
-                    return Ok("Kõik arved on makstud");
-                }
-                return Ok(uletatudArved);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest("Tarbija ei leidnud");
-            }
+            return CreatedAtAction("GetArve", new { id = arve.Id }, arve);
         }
 
+        // DELETE: api/Arve/5
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteArve(int id)
+        {
+            var arve = await _context.Arved.FindAsync(id);
+            if (arve == null)
+            {
+                return NotFound();
+            }
 
+            _context.Arved.Remove(arve);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        private bool ArveExists(int id)
+        {
+            return _context.Arved.Any(e => e.Id == id);
+        }
     }
 }

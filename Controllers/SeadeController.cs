@@ -2,10 +2,11 @@
 using Elektrijaam_ORM_11.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Elektrijaam_ORM_11.Controllers
 {
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     [ApiController]
     public class SeadeController : ControllerBase
     {
@@ -16,55 +17,106 @@ namespace Elektrijaam_ORM_11.Controllers
             _context = context;
         }
 
-        // GET: /seade
+        // GET: api/Seadmed
         [HttpGet]
-        public IActionResult GetSeadmed()
+        public async Task<ActionResult<IEnumerable<Seade>>> GetSeades()
         {
-            var seadmed = _context.Seadmed.ToList();
-            return Ok(seadmed);
+            return await _context.Seadmed.ToListAsync();
         }
 
-        // POST: /seade (Lisamine)
-        [HttpPost]
-        public IActionResult AddSead([FromBody] Seade seade)
+        // GET: api/Seaded/5
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Seade>> GetSeade(int id)
         {
-            if (seade.JargmineHooldusAeg < DateTime.Today)
+            var seade = await _context.Seadmed.FindAsync(id);
+
+            if (seade == null)
             {
-                return BadRequest("Hooldusaeg ei tohi olla minevikus");
+                return NotFound();
             }
-            if (seade.JaakMaksumus < seade.SoetusMaksumus)
+
+            return seade;
+        }
+
+        // PUT: api/Seaded/5
+        [HttpPut("{id}")]
+        public async Task<IActionResult> PutSeade(int id, Seade seade)
+        {
+            if (id != seade.Id)
             {
-                return BadRequest("Jaakmaksmus ei tohi olla suurem kui soetusmaksmus");
+                return BadRequest();
+            }
+
+            if (seade.JargmineHooldusAeg < DateTime.Now)
+            {
+                return BadRequest("Hoodlusaeg ei saa olla minevikus");
+            }
+
+            if (seade.JaakMaksumus > seade.SoetusMaksumus)
+            {
+                return BadRequest("Jääkmaksumus ei tohi olla suurem kui seotusmaksumus");
+            }
+
+            _context.Entry(seade).State = EntityState.Modified;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!SeadeExists(id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            return NoContent();
+        }
+
+        // POST: api/Seaded
+        [HttpPost]
+        public async Task<ActionResult<Seade>> PostSeade(Seade seade)
+        {
+            if (seade.JargmineHooldusAeg < DateTime.Now)
+            {
+                return BadRequest("Hoodlusaeg ei saa olla minevikus");
+            }
+
+            if (seade.JaakMaksumus > seade.SoetusMaksumus)
+            {
+                return BadRequest("Jääkmaksumus ei tohi olla suurem kui seotusmaksumus");
             }
 
             _context.Seadmed.Add(seade);
-            _context.SaveChanges();
-            return Ok();
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction("GetSeade", new { id = seade.Id }, seade);
         }
 
-        // PUT: seade/id (Muutmine)
-        [HttpPut("{id}")]
-        public IActionResult UpdateSeade(int id, [FromBody] Seade seade)
+        // DELETE: api/Seaded/5
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteSeade(int id)
         {
-            var existing = _context.Seadmed.Find(id);
-            if (existing == null)
+            var seade = await _context.Seadmed.FindAsync(id);
+            if (seade == null)
+            {
                 return NotFound();
+            }
 
-            if (seade.JargmineHooldusAeg < DateTime.Today)
-                return BadRequest("Hooldusaeg ei tohi olla minevikus.");
+            _context.Seadmed.Remove(seade);
+            await _context.SaveChangesAsync();
 
-            if (seade.JaakMaksumus > seade.SoetusMaksumus)
-                return BadRequest("Jääkmaksumus ei tohi olla suurem kui soetusmaksumus.");
+            return NoContent();
+        }
 
-            existing.Nimetus = seade.Nimetus;
-            existing.Tootja = seade.Tootja;
-            existing.JargmineHooldusAeg = seade.JargmineHooldusAeg;
-            existing.JaakMaksumus = seade.JaakMaksumus;
-            existing.SoetusMaksumus = seade.SoetusMaksumus;
-            existing.Aktiivne = seade.Aktiivne;
-
-            _context.SaveChanges();
-            return Ok(existing);
+        private bool SeadeExists(int id)
+        {
+            return _context.Seadmed.Any(e => e.Id == id);
         }
     }
 }

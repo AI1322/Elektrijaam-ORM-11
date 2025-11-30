@@ -8,7 +8,6 @@ namespace Elektrijaam_ORM_11.Models
         public bool Makstud { get; set; }
         public DateTime MaksmiseTahtaeg { get; set; }
         public decimal MakstudSumma { get; set; }
-        public DateTime? MaksmiseKuupaev { get; set; }
-        public ICollection<Arve> Arved { get; set; } = new List<Arve>();
+        public DateTime? MaksmiseKuupaev { get; set; } = DateTime.Now;
     }
 }

@@ -8,7 +8,10 @@ namespace Elektrijaam_ORM_11.Models
         public DateTime Kuupaev { get; set; }
         public double TarbimiseKogus { get; set; }
         public decimal Summa { get; set; }
-        public Maksestaatus Maksestaatus { get; set; }
-        public Tarbija Tarbija { get; set; }
+        public int MaksestaatusId { get; set; }
+        public Maksestaatus? Maksestaatus { get; set; }
+
+        public int TarbijaId { get; set; }
+        public Tarbija? Tarbija { get; set; }
     }
 }

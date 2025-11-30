@@ -6,8 +6,10 @@ namespace Elektrijaam_ORM_11.Models
     {
         public int Id { get; set; }
         public string Nimi { get; set; } = string.Empty;
-        public Kontaktandmed Kontaktandmed { get; set; }
-        public Asukoht Asukoht { get; set; }
-        public ICollection<Arve> Arved { get; set; } = new List<Arve>();
+        public int KontaktandmedId { get; set; }
+        public Kontaktandmed? Kontaktandmed { get; set; }
+
+        public int AsukohtId { get; set; }
+        public Asukoht? Asukoht { get; set; }
     }
 }
